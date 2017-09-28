@@ -1,0 +1,5 @@
+<resources>
+  <string name="app_name">GetBingPicture</string>
+  <string name="http_url_conn">HttpURLConnection获取</string>
+  <string name="okhttp">okHttp获取</string>
+</resources>
