@@ -8,10 +8,15 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageView;
+import com.bumptech.glide.Glide;
 import com.display.view.getbingpicture.util.HttpUtil;
 import com.display.view.getbingpicture.util.HttpUtil.HttpCallbackListener;
-import com.display.view.getbingpicture.util.PictureUtil;
 import com.display.view.getbingpicture.util.XMLParseUtil;
+import java.io.IOException;
+import java.io.StringReader;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity implements OnClickListener {
 
@@ -30,9 +35,11 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
 
     private void initView() {
         Button getPicBtn = findViewById(R.id.get_picture);
+        Button getPicOkBtn = findViewById(R.id.get_picture_okhttp);
         mResolutionSpinner = findViewById(R.id.resolution_spinner);
         mImageView = findViewById(R.id.bing_picture);
         getPicBtn.setOnClickListener(this);
+        getPicOkBtn.setOnClickListener(this);
     }
 
     @Override
@@ -42,13 +49,19 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
                 HttpUtil.sendHttpRequest(sBingUrl, new HttpCallbackListener() {
                     @Override
                     public void finish(String response) {
-                        StringBuilder picUrl = new StringBuilder();
+                        final StringBuilder picUrl = new StringBuilder();
                         picUrl.append(BING);
                         picUrl.append(XMLParseUtil.parseWithPull(response));
                         picUrl.append(mResolutionSpinner.
                                 getSelectedItem().toString() + ".jpg");
-                        Log.i("TAG", "finish: " + picUrl.toString());
-                        PictureUtil.loadPic(picUrl.toString(), mImageView);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Glide.with(MainActivity.this).
+                                        load(picUrl.toString()).into(mImageView);
+                            }
+                        });
+
                     }
 
                     @Override
@@ -58,7 +71,29 @@ public class MainActivity extends AppCompatActivity implements OnClickListener {
                 });
                 break;
             case R.id.get_picture_okhttp:
+                HttpUtil.sendOkHttpRequest(sBingUrl, new Callback() {
+                    @Override
+                    public void onFailure(Call call, IOException e) {
 
+                    }
+
+                    @Override
+                    public void onResponse(Call call, Response response) throws IOException {
+                        String body = response.body().string();
+                        final StringBuilder picUrl = new StringBuilder();
+                        picUrl.append(BING);
+                        picUrl.append(XMLParseUtil.parseWithSax(body));
+                        picUrl.append(mResolutionSpinner.
+                                getSelectedItem().toString() + ".jpg");
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Glide.with(MainActivity.this)
+                                        .load(picUrl.toString()).into(mImageView);
+                            }
+                        });
+                    }
+                });
                 break;
         }
 
